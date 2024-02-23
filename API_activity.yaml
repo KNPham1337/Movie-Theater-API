@@ -1,0 +1,97 @@
+openapi: 3.0.0
+info:
+  title: Movie Theater Payment API
+  description: 
+    The Movie Theater Payment API is designed to manage the interchange between user and the server of the movie theater. 
+    The website acts as the middle ground where API requests are made to suit user needs. 
+    It involves tasks such as transferring user bank info to necessary bank servers,
+    returning movie selections from user inputs and finding available seats and times for a selected movie. 
+    In addition, the Movie Theater Payment API can delete movie tickets should the user request it.  
+  version: 0.1.9
+servers:
+  - url: http://api.movieTheater.com/
+    description: The main website where the API manages user interaction and server requests.
+  - url: http://internal-movie-staging.example.com
+    description: The address to the internal server. To be used for testing only and should not be accessible to normal users. 
+paths:
+  api/payment:
+    get:
+      summary: Gets the users payment information
+      description: Upon retrieval of user payment information,
+      the website server queries an official external banking institute server to verify the information.
+      When the bank server returns a successful verification, the movie server will buy the tickets.
+      parameters:
+        - in: query
+          name: bankInfo
+          schema:
+            type: string
+          required: true
+          description: String literal of banking institute name
+
+        - in: query
+          name: userPIN
+          schema:
+            type: integer
+          required: true
+          description: Number ID of the credit card PIN
+
+        - in: query
+          name: userSecurityCode
+          schema:
+            type: integer
+          required: true
+          description: Number of the security code for credit card
+
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Payment information does not exist
+
+  api/payment/confirmation:
+    post:
+      summary: Update the availability and seating of movie listings
+      description: Called after a successful GET request, creates a ticket object in table representing the ticket the user bought.
+      Contains the time, movie title, location, and seating arrangement
+      requestBody: 
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                movie:
+                  type: string
+                time:
+                  type: integer
+                seating:
+                  type: integer
+                  minumum: 1
+      responses:
+        '201': 
+          description: Created
+        '408':
+          description: Request Timeout the user took too long to make purchase
+
+  api/ticket/{ticketID}:
+    parameters:
+      -in: path
+      name: id
+      required: true
+      schema: 
+        type: integer
+
+    delete:
+      summary: Delete ticket by ticket id
+      responses:
+        '404': 
+          description: Ticket id does not exist
+        '204':
+          description: Ticket was deleted successfully
+        '401': 
+          descriptions: User does not have authorization to delete ticket
+
+
+# https://swagger.io/docs/specification/basic-structure/
